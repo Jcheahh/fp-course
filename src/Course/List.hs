@@ -254,10 +254,17 @@ flattenAgain =
 seqOptional ::
   List (Optional a) ->
   Optional (List a)
-seqOptional (Empty :. t) =
-  Empty
-seqOptional (h :. t) =
-  Full (h :. seqOptional t)
+seqOptional = foldRight (\a b -> case (a, b) of
+  (Full h, Full t) -> Full $ h :. t
+  _ -> Empty
+  ) (Full Nil)
+-- seqOptional Nil = Full Nil
+-- seqOptional (Empty :. t) =
+--   Empty
+-- seqOptional (Full h :. t) = case seqOptional t of
+--   Empty -> Empty
+--   Full t' -> Full (h :. t')
+
 
 -- | Find the first element in the list matching the predicate.
 --
@@ -300,8 +307,8 @@ find f xs =
 lengthGT4 ::
   List a ->
   Bool
-lengthGT4 =
-  error "todo: Course.List#lengthGT4"
+lengthGT4 (_:._:._:._:._) = True 
+lengthGT4 _ = False 
 
 -- | Reverse a list.
 --
@@ -317,8 +324,7 @@ lengthGT4 =
 reverse ::
   List a ->
   List a
-reverse =
-  error "todo: Course.List#reverse"
+reverse = foldLeft (flip(:.)) Nil
 
 -- | Produce an infinite `List` that seeds with the given value at its head,
 -- then runs the given function for subsequent elements
@@ -346,8 +352,8 @@ produce f x = x :. produce f (f x)
 notReverse ::
   List a ->
   List a
-notReverse =
-  error "todo: Is it even possible?"
+notReverse Nil = Nil 
+notReverse (x :. xs) = x :. notReverse xs
 
 ---- End of list exercises
 
