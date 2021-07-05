@@ -36,8 +36,8 @@ instance Monad ExactlyOne where
     (a -> ExactlyOne b)
     -> ExactlyOne a
     -> ExactlyOne b
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance ExactlyOne"
+  (=<<) f (ExactlyOne a) =
+    f a
 
 -- | Binds a function on a List.
 --
@@ -48,32 +48,38 @@ instance Monad List where
     (a -> List b)
     -> List a
     -> List b
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance List"
+  -- (=<<) =
+  --   flatMap
+  (=<<) f Nil =
+    Nil
+  (=<<) f (h :. t) =
+    f h ++ (=<<) f t
 
 -- | Binds a function on an Optional.
 --
 -- >>> (\n -> Full (n + n)) =<< Full 7
--- Full 14
+-- WAS Full 14
+-- NOW Full 49
 instance Monad Optional where
   (=<<) ::
     (a -> Optional b)
     -> Optional a
     -> Optional b
   (=<<) =
-    error "todo: Course.Monad (=<<)#instance Optional"
+    bindOptional
 
 -- | Binds a function on the reader ((->) t).
 --
--- >>> ((*) =<< (+10)) 7
--- 119
+-- >>> ((*) =<< (+10)) 9
+-- WAS 119
+-- NOW 171
 instance Monad ((->) t) where
   (=<<) ::
-    (a -> ((->) t b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (=<<) =
-    error "todo: Course.Monad (=<<)#instance ((->) t)"
+    (a -> (->) t b)
+    -> (->) t a
+    -> (->) t b
+  (=<<) f g =
+    \x -> f (g x) x
 
 -- | Witness that all things with (=<<) and (<$>) also have (<*>).
 --
@@ -87,7 +93,18 @@ instance Monad ((->) t) where
 -- Full 15
 --
 -- >>> Empty <**> Full 7
--- Empty
+-- WAS Empty
+-- NOW Ambiguous type variable ‘b0’ arising from a use of ‘evalPrint’
+-- NOW prevents the constraint ‘(Show b0)’ from being solved.
+-- NOW Probable fix: use a type annotation to specify what ‘b0’ should be.
+-- NOW These potential instances exist:
+-- NOW   instance [safe] (Show a, Show b) => Show (a :-> b)
+-- NOW     -- Defined in ‘Test.QuickCheck.Function’
+-- NOW   instance [safe] (Show a, Show b) => Show (Fun a b)
+-- NOW     -- Defined in ‘Test.QuickCheck.Function’
+-- NOW   instance Show ASCIIString -- Defined in ‘Test.QuickCheck.Modifiers’
+-- NOW   ...plus 263 others
+-- NOW   (use -fprint-potential-instances to see them all)
 --
 -- >>> Full (+8) <**> Empty
 -- Empty
@@ -112,7 +129,7 @@ instance Monad ((->) t) where
   -> k a
   -> k b
 (<**>) =
-  error "todo: Course.Monad#(<**>)"
+  (<*>)
 
 infixl 4 <**>
 
@@ -122,7 +139,18 @@ infixl 4 <**>
 -- [1,2,3,1,2]
 --
 -- >>> join (Full Empty)
--- Empty
+-- WAS Empty
+-- NOW Ambiguous type variable ‘a0’ arising from a use of ‘evalPrint’
+-- NOW prevents the constraint ‘(Show a0)’ from being solved.
+-- NOW Probable fix: use a type annotation to specify what ‘a0’ should be.
+-- NOW These potential instances exist:
+-- NOW   instance [safe] (Show a, Show b) => Show (a :-> b)
+-- NOW     -- Defined in ‘Test.QuickCheck.Function’
+-- NOW   instance [safe] (Show a, Show b) => Show (Fun a b)
+-- NOW     -- Defined in ‘Test.QuickCheck.Function’
+-- NOW   instance Show ASCIIString -- Defined in ‘Test.QuickCheck.Modifiers’
+-- NOW   ...plus 263 others
+-- NOW   (use -fprint-potential-instances to see them all)
 --
 -- >>> join (Full (Full 7))
 -- Full 7
@@ -134,7 +162,7 @@ join ::
   k (k a)
   -> k a
 join =
-  error "todo: Course.Monad#join"
+  (=<<) id
 
 -- | Implement a flipped version of @(=<<)@, however, use only
 -- @join@ and @(<$>)@.
@@ -148,7 +176,7 @@ join =
   -> (a -> k b)
   -> k b
 (>>=) =
-  error "todo: Course.Monad#(>>=)"
+  flip (=<<)
 
 infixl 1 >>=
 
@@ -163,8 +191,8 @@ infixl 1 >>=
   -> (a -> k b)
   -> a
   -> k c
-(<=<) =
-  error "todo: Course.Monad#(<=<)"
+(<=<) f g a =
+  f =<< g a
 
 infixr 1 <=<
 
